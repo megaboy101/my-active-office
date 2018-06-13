@@ -9,7 +9,7 @@
             "Alexa tell active office start",
             "Alexa ask active office hello"
           ],
-          "name": "my-active-office",
+          "name": "Active Office",
           "description": "Sample Full Description"
         }
       },

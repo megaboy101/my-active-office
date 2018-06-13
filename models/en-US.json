@@ -2,37 +2,135 @@
   "interactionModel": {
     "languageModel": {
       "invocationName": "active office",
-      "types": [
-
+      "types": [],
+      "dialog": {
+        "intents": [
+          {
+            "name": "CreateRoutine",
+            "confirmationRequired": false,
+            "slots": [
+              {
+                "name": "createDate",
+                "type": "AMAZON.DATE",
+                "elicitationRequired": true,
+                "confirmationRequired": false,
+                "prompts": {
+                  "elicitation": "Elicit.Intent-CreateRoutine.IntentSlot-createDate"
+                }
+              },
+              {
+                "name": "createTime",
+                "type": "AMAZON.TIME",
+                "elicitationRequired": true,
+                "confirmationRequired": false,
+                "prompts": {
+                  "elicitation": "Elicit.Intent-CreateRoutine.IntentSlot-createTime"
+                }
+              },
+              {
+                "name": "createCount",
+                "type": "AMAZON.NUMBER",
+                "elicitationRequired": true,
+                "confirmationRequired": false,
+                "prompts": {
+                  "elicitation": "Elicit.Intent-CreateRoutine.IntentSlot-createCount"
+                }
+              },
+              {
+                "name": "createDuration",
+                "type": "AMAZON.DURATION",
+                "elicitationRequired": true,
+                "confirmationRequired": false,
+                "prompts": {
+                  "elicitation": "Elicit.Intent-CreateRoutine.IntentSlot-createDuration"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "prompts": [
+        {
+          "id": "Elicit.Intent-CreateRoutine.IntentSlot-createDate",
+          "variations": [
+            {
+              "type": "PlainText",
+              "value": "On what day would you like to start your routine."
+            }
+          ]
+        },
+        {
+          "id": "Elicit.Intent-CreateRoutine.IntentSlot-createTime",
+          "variations": [
+            {
+              "type": "PlainText",
+              "value": "Ok, at what time would you like to start your routine."
+            }
+          ]
+        },
+        {
+          "id": "Elicit.Intent-CreateRoutine.IntentSlot-createCount",
+          "variations": [
+            {
+              "type": "PlainText",
+              "value": "How many sets would you like to complete per day."
+            }
+          ]
+        },
+        {
+          "id": "Elicit.Intent-CreateRoutine.IntentSlot-createDuration",
+          "variations": [
+            {
+              "type": "PlainText",
+              "value": "And lastly how how much time should be in between each set."
+            }
+          ]
+        }
       ],
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
-          "samples": [
-
-          ]
+          "samples": []
         },
         {
           "name": "AMAZON.HelpIntent",
-          "samples": [
-
-          ]
+          "samples": []
         },
         {
           "name": "AMAZON.StopIntent",
-          "samples": [
-
-          ]
+          "samples": []
         },
         {
-          "name": "HelloWorldIntent",
-          "slots": [
-
-          ],
+          "name": "CreateRoutine",
           "samples": [
-            "hello",
-            "say hello",
-            "say hello world"
+            "add a routine",
+            "add a new routine",
+            "create a routine",
+            "create a new routine",
+            "make a routine",
+            "make a new routine"
+          ],
+          "slots": [
+            {
+              "name": "createDate",
+              "type": "AMAZON.DATE",
+              "samples": ["{createDate}"]
+            },
+            {
+              "name": "createTime",
+              "type": "AMAZON.TIME",
+              "samples": ["{createTime}"]
+            },
+            {
+              "name": "createCount",
+              "type": "AMAZON.NUMBER",
+              "samples": ["{createCount}"]
+            },
+            {
+              "name": "createDuration",
+              "type": "AMAZON.DURATION",
+              "samples": ["{createDuration}"]
+            }
           ]
         }
       ]

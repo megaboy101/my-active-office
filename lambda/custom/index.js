@@ -1,79 +1,152 @@
 /* eslint-disable  func-names */
 /* eslint-disable  no-console */
 
-const Alexa = require('ask-sdk-core');
+const Alexa = require("ask-sdk-core");
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
+    return handlerInput.requestEnvelope.request.type === "LaunchRequest";
   },
   handle(handlerInput) {
-    const speechText = 'Welcome to the Alexa Skills Kit, you can say hello!';
+    const speechText =
+      "Hello, welcome to the Active Office Alexa protocol plugin. If you would like to create a new exercise routine, just say so.";
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .reprompt("If would you like to create a new exercise routine just say so.")
       .getResponse();
-  },
+  }
 };
 
-const HelloWorldIntentHandler = {
+const InProgressCreateRoutineHandler = {
   canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-      && handlerInput.requestEnvelope.request.intent.name === 'HelloWorldIntent';
+    const { request } = handlerInput.requestEnvelope;
+
+    return (
+      request.type === "IntentRequest" &&
+      request.intent.name === "CreateRoutine" &&
+      request.dialogState !== "COMPLETED"
+    );
   },
+
   handle(handlerInput) {
-    const speechText = 'Hello World!';
+    const currentIntent = handlerInput.requestEnvelope.request.intent;
+    let prompt = "";
+
+    for (const slotName of Object.keys(handlerInput.requestEnvelope.request.intent.slots)) {
+      const currentSlot = currentIntent.slots[slotName];
+      if (currentSlot.confirmationStatus !== "CONFIRMED"
+                && currentSlot.resolutions
+                && currentSlot.resolutions.resolutionsPerAuthority[0]) {
+        if (currentSlot.resolutions.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_MATCH") {
+          if (currentSlot.resolutions.resolutionsPerAuthority[0].values.length > 1) {
+            prompt = "Which would you like";
+            const size = currentSlot.resolutions.resolutionsPerAuthority[0].values.length;
+
+            currentSlot.resolutions.resolutionsPerAuthority[0].values
+              .forEach((element, index) => {
+                prompt += ` ${(index === size - 1) ? " or" : " "} ${element.value.name}`;
+              });
+
+            prompt += "?";
+
+            return handlerInput.responseBuilder
+              .speak(prompt)
+              .reprompt(prompt)
+              .addElicitSlotDirective(currentSlot.name)
+              .getResponse();
+          }
+        } else if (currentSlot.resolutions.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_NO_MATCH") {
+          return handlerInput.responseBuilder
+            .speak("Error")
+            .reprompt("Error")
+            .addElicitSlotDirective(currentSlot.name)
+            .getResponse();
+        }
+      }
+    }
 
     return handlerInput.responseBuilder
-      .speak(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .addDelegateDirective(currentIntent)
       .getResponse();
+  }
+};
+
+const CompletedCreateRoutineHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+
+    return (
+      request.type === "IntentRequest" &&
+      request.intent.name === "CreateRoutine" &&
+      request.dialogState === "COMPLETED"
+    );
   },
+
+  handle(handlerInput) {
+    // const filledSlots = handlerInput.requestEnvelope.request.intent.slots;
+
+    // const slotValues = getSlotValues(filledSlots);
+
+    const speechOutput = "Fantastic, I have saved your routine for you.";
+
+    return handlerInput.responseBuilder
+      .speak(speechOutput)
+      .getResponse();
+  }
 };
 
 const HelpIntentHandler = {
   canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-      && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
+    return (
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      handlerInput.requestEnvelope.request.intent.name === "AMAZON.HelpIntent"
+    );
   },
   handle(handlerInput) {
-    const speechText = 'You can say hello to me!';
+    const speechText = "You can say hello to me!";
 
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard("Hello World", speechText)
       .getResponse();
-  },
+  }
 };
 
 const CancelAndStopIntentHandler = {
   canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-      && (handlerInput.requestEnvelope.request.intent.name === 'AMAZON.CancelIntent'
-        || handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent');
+    return (
+      handlerInput.requestEnvelope.request.type === "IntentRequest" &&
+      (handlerInput.requestEnvelope.request.intent.name ===
+        "AMAZON.CancelIntent" ||
+        handlerInput.requestEnvelope.request.intent.name ===
+          "AMAZON.StopIntent")
+    );
   },
   handle(handlerInput) {
-    const speechText = 'Goodbye!';
+    const speechText = "Goodbye!";
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard("Hello World", speechText)
       .getResponse();
-  },
+  }
 };
 
 const SessionEndedRequestHandler = {
   canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
+    return handlerInput.requestEnvelope.request.type === "SessionEndedRequest";
   },
   handle(handlerInput) {
-    console.log(`Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`);
+    console.log(
+      `Session ended with reason: ${
+        handlerInput.requestEnvelope.request.reason
+      }`
+    );
 
     return handlerInput.responseBuilder.getResponse();
-  },
+  }
 };
 
 const ErrorHandler = {
@@ -84,18 +157,62 @@ const ErrorHandler = {
     console.log(`Error handled: ${error.message}`);
 
     return handlerInput.responseBuilder
-      .speak('Sorry, I can\'t understand the command. Please say again.')
-      .reprompt('Sorry, I can\'t understand the command. Please say again.')
+      .speak("Sorry, I can't understand the command. Please say again.")
+      .reprompt("Sorry, I can't understand the command. Please say again.")
       .getResponse();
-  },
+  }
 };
+
+// // Helper function
+// function getSlotValues(filledSlots) {
+//   const slotValues = {};
+
+//   console.log(`The filled slots: ${JSON.stringify(filledSlots)}`);
+//   Object.keys(filledSlots).forEach((item) => {
+//     const name = filledSlots[item].name;
+
+//     if (filledSlots[item] &&
+//       filledSlots[item].resolutions &&
+//       filledSlots[item].resolutions.resolutionsPerAuthority[0] &&
+//       filledSlots[item].resolutions.resolutionsPerAuthority[0].status &&
+//       filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) {
+//       switch (filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) {
+//         case 'ER_SUCCESS_MATCH':
+//           slotValues[name] = {
+//             synonym: filledSlots[item].value,
+//             resolved: filledSlots[item].resolutions.resolutionsPerAuthority[0].values[0].value.name,
+//             isValidated: true,
+//           };
+//           break;
+//         case 'ER_SUCCESS_NO_MATCH':
+//           slotValues[name] = {
+//             synonym: filledSlots[item].value,
+//             resolved: filledSlots[item].value,
+//             isValidated: false,
+//           };
+//           break;
+//         default:
+//           break;
+//       }
+//     } else {
+//       slotValues[name] = {
+//         synonym: filledSlots[item].value,
+//         resolved: filledSlots[item].value,
+//         isValidated: false,
+//       };
+//     }
+//   }, this);
+
+//   return slotValues;
+// }
 
 const skillBuilder = Alexa.SkillBuilders.custom();
 
 exports.handler = skillBuilder
   .addRequestHandlers(
     LaunchRequestHandler,
-    HelloWorldIntentHandler,
+    InProgressCreateRoutineHandler,
+    CompletedCreateRoutineHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler
