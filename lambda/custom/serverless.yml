@@ -20,26 +20,31 @@ service: my-active-office
 provider:
   name: aws
   runtime: nodejs8.10
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+        - dynamodb:Query
+      Resource: arn:aws:dynamodb:us-east-1:*:*
 
 # you can overwrite defaults here
 stage: dev
 region: us-east-1
 
 # you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
+  #  - Effect: "Allow"
+  #    Action:
+  #      - "s3:PutObject"
+  #    Resource:
+  #      Fn::Join:
+  #        - ""
+  #        - - "arn:aws:s3:::"
+  #          - "Ref" : "ServerlessDeploymentBucket"
+  #          - "/*"
 
 # you can define service wide environment variables here
 #  environment:
@@ -58,12 +63,6 @@ functions:
   index:
     handler: index.handler
     events:
-      - alexaSkill: amzn1.ask.skill.3cc7e691-d62e-4a8b-abc2-2fefc35f066f
-
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
-#    events:
 #      - http:
 #          path: users/create
 #          method: get
@@ -71,7 +70,7 @@ functions:
 #      - schedule: rate(10 minutes)
 #      - sns: greeter-topic
 #      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
-#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
+      - alexaSkill: amzn1.ask.skill.3cc7e691-d62e-4a8b-abc2-2fefc35f066f
 #      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
 #      - iot:
 #          sql: "SELECT * FROM 'some_topic'"
@@ -94,8 +93,21 @@ functions:
 #      variable2: value2
 
 # you can add CloudFormation resource templates here
-#resources:
-#  Resources:
+resources:
+  Resources:
+    activeOfficeRoutines:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: activeOfficeRoutines
+          AttributeDefinitions:
+            - AttributeName: userId
+              AttributeType: S
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
 #    NewResource:
 #      Type: AWS::S3::Bucket
 #      Properties:

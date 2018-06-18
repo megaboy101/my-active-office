@@ -2,6 +2,9 @@
 /* eslint-disable  no-console */
 
 const Alexa = require("ask-sdk-core");
+const AWS = require("aws-sdk");
+
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -13,7 +16,9 @@ const LaunchRequestHandler = {
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .reprompt("If would you like to create a new exercise routine just say so.")
+      .reprompt(
+        "If would you like to create a new exercise routine just say so."
+      )
       .getResponse();
   }
 };
@@ -33,20 +38,33 @@ const InProgressCreateRoutineHandler = {
     const currentIntent = handlerInput.requestEnvelope.request.intent;
     let prompt = "";
 
-    for (const slotName of Object.keys(handlerInput.requestEnvelope.request.intent.slots)) {
+    for (const slotName of Object.keys(
+      handlerInput.requestEnvelope.request.intent.slots
+    )) {
       const currentSlot = currentIntent.slots[slotName];
-      if (currentSlot.confirmationStatus !== "CONFIRMED"
-                && currentSlot.resolutions
-                && currentSlot.resolutions.resolutionsPerAuthority[0]) {
-        if (currentSlot.resolutions.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_MATCH") {
-          if (currentSlot.resolutions.resolutionsPerAuthority[0].values.length > 1) {
+      if (
+        currentSlot.confirmationStatus !== "CONFIRMED" &&
+        currentSlot.resolutions &&
+        currentSlot.resolutions.resolutionsPerAuthority[0]
+      ) {
+        if (
+          currentSlot.resolutions.resolutionsPerAuthority[0].status.code ===
+          "ER_SUCCESS_MATCH"
+        ) {
+          if (
+            currentSlot.resolutions.resolutionsPerAuthority[0].values.length > 1
+          ) {
             prompt = "Which would you like";
-            const size = currentSlot.resolutions.resolutionsPerAuthority[0].values.length;
+            const size =
+              currentSlot.resolutions.resolutionsPerAuthority[0].values.length;
 
-            currentSlot.resolutions.resolutionsPerAuthority[0].values
-              .forEach((element, index) => {
-                prompt += ` ${(index === size - 1) ? " or" : " "} ${element.value.name}`;
-              });
+            currentSlot.resolutions.resolutionsPerAuthority[0].values.forEach(
+              (element, index) => {
+                prompt += ` ${index === size - 1 ? " or" : " "} ${
+                  element.value.name
+                }`;
+              }
+            );
 
             prompt += "?";
 
@@ -56,7 +74,10 @@ const InProgressCreateRoutineHandler = {
               .addElicitSlotDirective(currentSlot.name)
               .getResponse();
           }
-        } else if (currentSlot.resolutions.resolutionsPerAuthority[0].status.code === "ER_SUCCESS_NO_MATCH") {
+        } else if (
+          currentSlot.resolutions.resolutionsPerAuthority[0].status.code ===
+          "ER_SUCCESS_NO_MATCH"
+        ) {
           return handlerInput.responseBuilder
             .speak("Error")
             .reprompt("Error")
@@ -84,15 +105,32 @@ const CompletedCreateRoutineHandler = {
   },
 
   handle(handlerInput) {
-    // const filledSlots = handlerInput.requestEnvelope.request.intent.slots;
+    return new Promise((res, rej) => {
+      const filledSlots = handlerInput.requestEnvelope.request.intent.slots;
 
-    // const slotValues = getSlotValues(filledSlots);
+      const slotValues = getSlotValues(filledSlots);
 
-    const speechOutput = "Fantastic, I have saved your routine for you.";
+      const saveParams = {
+        TableName: "activeOfficeRoutines",
+        Item: {
+          userId: handlerInput.requestEnvelope.session.user.userId,
+          startDate: slotValues.createDate.resolved,
+          startTime: slotValues.createTime.resolved,
+          setCount: slotValues.createCount.resolved,
+          setInterval: slotValues.createDuration.resolved
+        }
+      };
 
-    return handlerInput.responseBuilder
-      .speak(speechOutput)
-      .getResponse();
+      dynamoDB.put(saveParams, err => {
+        if (err) {
+          rej(err);
+        }
+
+        const speechOutput = "Fantastic, I have saved your routine for you.";
+
+        res(handlerInput.responseBuilder.speak(speechOutput).getResponse());
+      });
+    });
   }
 };
 
@@ -163,48 +201,54 @@ const ErrorHandler = {
   }
 };
 
-// // Helper function
-// function getSlotValues(filledSlots) {
-//   const slotValues = {};
+// Helper function
+function getSlotValues(filledSlots) {
+  const slotValues = {};
 
-//   console.log(`The filled slots: ${JSON.stringify(filledSlots)}`);
-//   Object.keys(filledSlots).forEach((item) => {
-//     const name = filledSlots[item].name;
+  console.log(`The filled slots: ${JSON.stringify(filledSlots)}`);
+  Object.keys(filledSlots).forEach(item => {
+    const name = filledSlots[item].name;
 
-//     if (filledSlots[item] &&
-//       filledSlots[item].resolutions &&
-//       filledSlots[item].resolutions.resolutionsPerAuthority[0] &&
-//       filledSlots[item].resolutions.resolutionsPerAuthority[0].status &&
-//       filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) {
-//       switch (filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) {
-//         case 'ER_SUCCESS_MATCH':
-//           slotValues[name] = {
-//             synonym: filledSlots[item].value,
-//             resolved: filledSlots[item].resolutions.resolutionsPerAuthority[0].values[0].value.name,
-//             isValidated: true,
-//           };
-//           break;
-//         case 'ER_SUCCESS_NO_MATCH':
-//           slotValues[name] = {
-//             synonym: filledSlots[item].value,
-//             resolved: filledSlots[item].value,
-//             isValidated: false,
-//           };
-//           break;
-//         default:
-//           break;
-//       }
-//     } else {
-//       slotValues[name] = {
-//         synonym: filledSlots[item].value,
-//         resolved: filledSlots[item].value,
-//         isValidated: false,
-//       };
-//     }
-//   }, this);
+    if (
+      filledSlots[item] &&
+      filledSlots[item].resolutions &&
+      filledSlots[item].resolutions.resolutionsPerAuthority[0] &&
+      filledSlots[item].resolutions.resolutionsPerAuthority[0].status &&
+      filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code
+    ) {
+      switch (
+        filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code
+      ) {
+      case "ER_SUCCESS_MATCH":
+        slotValues[name] = {
+          synonym: filledSlots[item].value,
+          resolved:
+              filledSlots[item].resolutions.resolutionsPerAuthority[0].values[0]
+                .value.name,
+          isValidated: true
+        };
+        break;
+      case "ER_SUCCESS_NO_MATCH":
+        slotValues[name] = {
+          synonym: filledSlots[item].value,
+          resolved: filledSlots[item].value,
+          isValidated: false
+        };
+        break;
+      default:
+        break;
+      }
+    } else {
+      slotValues[name] = {
+        synonym: filledSlots[item].value,
+        resolved: filledSlots[item].value,
+        isValidated: false
+      };
+    }
+  }, this);
 
-//   return slotValues;
-// }
+  return slotValues;
+}
 
 const skillBuilder = Alexa.SkillBuilders.custom();
 
